@@ -69,17 +69,3 @@ var Languages = map[string]LanguageConfig{
 		Requirement: "chmod +x main.php",
 	},
 }
-
-/*
-execSync(`isolate
-    --box-id=1
-    --wait
-    --mem=${memory}
-    --time=${runtime}
-    --meta=${path.join(sandboxPath, 'box', 'meta.txt')}
-    --stderr=cerr.txt
-    --stdin=input.txt
-    --stdout=output.txt
-    --run -- "${command}"`,
-{ cwd: path.join(sandboxPath, 'box') });
-*/
