@@ -1,0 +1,66 @@
+definitions:
+  main.RequestData:
+    properties:
+      code:
+        description: The source code to judge
+        type: string
+      language:
+        description: The programming language
+        type: string
+      slug:
+        description: The problem identifier
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1:
+    post:
+      consumes:
+      - application/json
+      description: Receives code, language, and problem slug, runs the code, and returns
+        the judge results.
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Code and problem data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.RequestData'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Judge code
+      tags:
+      - judge
+swagger: "2.0"

@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type LanguageConfig struct {
@@ -71,18 +72,34 @@ var Languages = map[string]LanguageConfig{
 	},
 }
 
+// RequestData represents the payload for code judging.
+// swagger:model
 type RequestData struct {
-	Code     string `json:"code"`
-	Slug     string `json:"slug"`
-	Language string `json:"language"`
+	Code     string `json:"code"`     // The source code to judge
+	Slug     string `json:"slug"`     // The problem identifier
+	Language string `json:"language"` // The programming language
 }
 
 func main() {
 	fmt.Println("hello! this is hackacode/s code judger")
 	http.HandleFunc("/api/v1", apiHandler)
+	http.Handle("/swagger/", httpSwagger.WrapHandler)
 	http.ListenAndServe("0.0.0.0:3000", nil)
 }
 
+// @Summary      Judge code
+// @Description  Receives code, language, and problem slug, runs the code, and returns the judge results.
+// @Tags         judge
+// @Accept       json
+// @Produce      json
+// @Param        Authorization header string true "Bearer token"
+// @Param        request body RequestData true "Code and problem data"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400 {object} map[string]interface{}
+// @Failure      401 {object} map[string]interface{}
+// @Failure      404 {object} map[string]interface{}
+// @Failure      500 {object} map[string]interface{}
+// @Router       /api/v1 [post]
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 	if !isAuthorized(authHeader) {
