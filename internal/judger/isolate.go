@@ -91,9 +91,11 @@ func RunCommand(sandboxRoot string, boxID int, command string) error {
 		"--stdout=output.txt",
 		"--stderr=cerr.txt",
 		"--meta=meta.txt",
+		"--processes=4",
 		"--run",
 		"--",
 	}
+
 	args = append(args, strings.Fields(command)...)
 
 	cmd := exec.Command("isolate", args...)
@@ -148,23 +150,15 @@ func GetStderr(sandboxRoot string, boxID int) (string, error) {
 
 func Compile(sandboxRoot string, boxID int, command string) error {
 	boxPath := fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
-
 	cmdParts := strings.Fields(command)
-	for i, part := range cmdParts {
-		if part == "-o" && i+1 < len(cmdParts) {
-			cmdParts[i+1] = fmt.Sprintf("%s/main", boxPath)
-		}
-		if strings.HasSuffix(part, ".cpp") || strings.HasSuffix(part, ".c") {
-			cmdParts[i] = fmt.Sprintf("%s/%s", boxPath, part)
-		}
-	}
 
 	cmd := exec.Command(cmdParts[0], cmdParts[1:]...)
+	cmd.Dir = boxPath
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("compile error: %v, output: %s", err, string(output))
 	}
-
 	return nil
 }
 

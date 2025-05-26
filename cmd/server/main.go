@@ -43,12 +43,6 @@ var Languages = map[string]LanguageConfig{
 		Compile:   "go build -o main main.go",
 		Run:       "./main",
 	},
-	"Java": {
-		Extension: "java",
-		File:      "Main.java",
-		Compile:   "/usr/bin/javac Main.java && echo 'Main-Class: Main' > MANIFEST.MF && jar cfm Main.jar MANIFEST.MF Main.class",
-		Run:       "./Main.jar",
-	},
 	"Python": {
 		Extension: "py",
 		File:      "main.py",
@@ -57,7 +51,7 @@ var Languages = map[string]LanguageConfig{
 	"Javascript": {
 		Extension: "js",
 		File:      "main.js",
-		Run:       "node main.js",
+		Run:       "/usr/bin/node main.js",
 	},
 	"Ruby": {
 		Extension: "rb",
@@ -196,12 +190,11 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	resp := map[string]interface{}{
-		"title":       challenge["title"],
-		"description": challenge["description"],
-		"language":    requestData.Language,
-		"code":        requestData.Code,
-		"status":      "success",
-		"results":     results,
+		"slug":     requestData.Slug,
+		"language": requestData.Language,
+		"code":     requestData.Code,
+		"status":   "success",
+		"results":  results,
 	}
 	json.NewEncoder(w).Encode(resp)
 }
