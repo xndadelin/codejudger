@@ -30,6 +30,8 @@ RUN git clone https://github.com/ioi/isolate.git /tmp/isolate && \
     cp isolate /usr/local/bin/ && \
     cd / && rm -rf /tmp/isolate
 
+RUN mkdir -p /var/lib/isolate && chmod 777 /var/lib/isolate
+
 COPY --from=builder /app/server .
 
 CMD ["./server"]
