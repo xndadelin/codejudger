@@ -23,22 +23,31 @@ var Languages = map[string]LanguageConfig{
 		Extension: "cpp",
 		File:      "main.cpp",
 		Compile:   "/usr/bin/g++ -O2 -o main main.cpp -Wall",
-		Run:       "./main < input.txt > output.txt",
+		Run:       "./main",
 	},
 	"C": {
 		Extension: "c",
 		File:      "main.c",
-		Run:       "gcc -O2 -o main main.c -Wall 2> error.txt && ./main < input.txt > output.txt",
+		Compile:   "/usr/bin/gcc -O2 -o main main.c -Wall",
+		Run:       "./main",
 	},
-	"C#": {
-		Extension: "cs",
-		File:      "main.cs",
-		Run:       "dotnet new console -o main && cp main.cs main/Program.cs && cd main && dotnet build -c Release 2> ../error.txt && cd .. && cp -r main/bin/Release/net8.0/ ./program && ./program/main < input.txt > output.txt",
+	"Rust": {
+		Extension: "rs",
+		File:      "main.rs",
+		Compile:   "rustc main.rs -o main",
+		Run:       "./main",
+	},
+	"Go": {
+		Extension: "go",
+		File:      "main.go",
+		Compile:   "go build -o main main.go",
+		Run:       "./main",
 	},
 	"Java": {
 		Extension: "java",
 		File:      "Main.java",
-		Run:       "javac Main.java 2> error.txt && echo 'Main-Class: Main' > MANIFEST.MF && jar cfm Main.jar MANIFEST.MF Main.class && chmod +x Main.jar && java -jar Main.jar < input.txt > output.txt",
+		Compile:   "/usr/bin/javac Main.java && echo 'Main-Class: Main' > MANIFEST.MF && jar cfm Main.jar MANIFEST.MF Main.class",
+		Run:       "./Main.jar",
 	},
 	"Python": {
 		Extension: "py",
@@ -48,27 +57,23 @@ var Languages = map[string]LanguageConfig{
 	"Javascript": {
 		Extension: "js",
 		File:      "main.js",
-		Run:       "node main.js < input.txt > output.txt",
+		Run:       "node main.js",
 	},
 	"Ruby": {
 		Extension: "rb",
 		File:      "main.rb",
-		Run:       "ruby main.rb < input.txt > output.txt",
-	},
-	"Rust": {
-		Extension: "rs",
-		File:      "main.rs",
-		Run:       "rustc main.rs 2> error.txt && ./main < input.txt > output.txt",
-	},
-	"Go": {
-		Extension: "go",
-		File:      "main.go",
-		Run:       "go mod init main 2> /dev/null && go build main.go 2> error.txt && ./main < input.txt > output.txt",
+		Run:       "ruby main.rb",
 	},
 	"PHP": {
 		Extension: "php",
 		File:      "main.php",
-		Run:       "php main.php < input.txt > output.txt",
+		Run:       "php main.php",
+	},
+	"C#": {
+		Extension: "cs",
+		File:      "main.cs",
+		Compile:   "dotnet build -o out main.cs",
+		Run:       "dotnet out/main.dll",
 	},
 }
 
@@ -140,20 +145,41 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	judgerConfig := judger.IsolateConfig{
-		File:    Languages[language].File,
-		Code:    requestData.Code,
-		Command: Languages[language].Run,
-		Compile: Languages[language].Compile,
+	var judgerTestCases []judger.TestCase
+	for _, tc := range test_cases {
+		tcBytes, _ := json.Marshal(tc)
+		var testCase judger.TestCase
+		if err := json.Unmarshal(tcBytes, &testCase); err == nil {
+			judgerTestCases = append(judgerTestCases, testCase)
+		}
 	}
 
-	stdout, stderr, exitCode, err := judger.RunIsolate(judgerConfig)
+	judgerConfig := judger.IsolateConfig{
+		File:      Languages[language].File,
+		Code:      requestData.Code,
+		Command:   Languages[language].Run,
+		Compile:   Languages[language].Compile,
+		TestCases: judgerTestCases,
+	}
+
+	results, err := judger.RunIsolate(judgerConfig)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("error running code: %v", err), http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]interface{}{
+			"status":  "comp-failed",
+			"message": fmt.Sprintf("%v", err),
+		}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+	if len(results) == 0 {
+		http.Error(w, "no judge results returned", http.StatusInternalServerError)
 		return
 	}
 
-	exitCodeInt, convErr := strconv.Atoi(exitCode)
+	exitcode, stdout, stderr := results[0].ExitCode, results[0].Stdout, results[0].Stderr
+
+	exitCodeInt, convErr := strconv.Atoi(exitcode)
 	if convErr != nil {
 		http.Error(w, "failed to parse exit code", http.StatusInternalServerError)
 		return
@@ -175,7 +201,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		"language":    requestData.Language,
 		"code":        requestData.Code,
 		"status":      "success",
-		"message":     "your code has been successfully judged",
+		"results":     results,
 	}
 	json.NewEncoder(w).Encode(resp)
 }

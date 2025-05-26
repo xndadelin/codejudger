@@ -26,6 +26,14 @@ type IsolateConfig struct {
 	Compile   string
 }
 
+type JudgeResult struct {
+	ExitCode string
+	Time     string
+	Memory   string
+	Stdout   string
+	Stderr   string
+}
+
 func NextBoxID(sandboxRoot string) (int, error) {
 	files, err := os.ReadDir(sandboxRoot)
 	if err != nil {
@@ -160,37 +168,74 @@ func Compile(sandboxRoot string, boxID int, command string) error {
 	return nil
 }
 
-func RunIsolate(cfg IsolateConfig) (string, string, string, error) {
+func ParseMeta(meta string) map[string]string {
+	result := make(map[string]string)
+	lines := strings.Split(meta, "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) == 2 {
+			result[parts[0]] = parts[1]
+		}
+	}
+	return result
+}
+
+func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 	sandboxRoot := "/var/lib/isolate"
 	boxID, err := NextBoxID(sandboxRoot)
 	if err != nil {
-		return "", "", "", err
+		return nil, err
 	}
 	if err := InitSandbox(sandboxRoot, boxID); err != nil {
-		return "", "", "", fmt.Errorf("failed to initialize sandbox: %v", err)
+		return nil, fmt.Errorf("failed to initialize sandbox: %v", err)
 	}
 	//defer CleanupSandbox(sandboxRoot, boxID)
 
 	if err := WriteCode(sandboxRoot, cfg.Code, boxID, cfg.File); err != nil {
-		return "", "", "", err
+		return nil, err
 	}
 
 	if cfg.Compile != "" {
 		if err := Compile(sandboxRoot, boxID, cfg.Compile); err != nil {
-			return "", "", "", fmt.Errorf("failed to compile code: %v", err)
+			return nil, fmt.Errorf("failed to compile code: %v", err)
 		}
 	}
 
-	if err := WriteInput(sandboxRoot, boxID, cfg.Input); err != nil {
-		return "", "", "", err
-	}
-	if err := RunCommand(sandboxRoot, boxID, cfg.Command); err != nil {
-		return "", "", "", err
+	var results []JudgeResult
+
+	for _, tc := range cfg.TestCases {
+		if err := WriteInput(sandboxRoot, boxID, tc.Input); err != nil {
+			return nil, err
+		}
+		if err := RunCommand(sandboxRoot, boxID, cfg.Command); err != nil {
+			return nil, err
+		}
+
+		stdout, _ := GetStdout(sandboxRoot, boxID)
+		stderr, _ := GetStderr(sandboxRoot, boxID)
+		meta, _ := GetMeta(sandboxRoot, boxID)
+
+		metaMap := ParseMeta(meta)
+		exitcode := metaMap["exitcode"]
+		time := metaMap["time"]
+		memory := metaMap["max-rss"]
+
+		fmt.Println("Exit Code:", exitcode)
+		fmt.Println("Time:", time)
+		fmt.Println("Memory:", memory)
+		fmt.Println("Stdout:", stdout)
+
+		results = append(results, JudgeResult{
+			ExitCode: exitcode,
+			Time:     time,
+			Memory:   memory,
+			Stdout:   stdout,
+			Stderr:   stderr,
+		})
 	}
 
-	stdout, _ := GetStdout(sandboxRoot, boxID)
-	stderr, _ := GetStderr(sandboxRoot, boxID)
-	meta, _ := GetMeta(sandboxRoot, boxID)
-
-	return stdout, stderr, meta, nil
+	return results, nil
 }
