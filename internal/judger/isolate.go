@@ -5,13 +5,25 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 )
 
+type TestCase struct {
+	Input  string `json:"input"`
+	Output string `json:"output"`
+}
+
 type IsolateConfig struct {
-	BoxID   int
-	Memory  int
-	Runtime int
-	Command string
+	BoxID     int
+	Memory    int
+	Runtime   int
+	Command   string
+	Code      string
+	Language  string
+	Input     string
+	File      string
+	TestCases []TestCase
+	Compile   string
 }
 
 func NextBoxID(sandboxRoot string) (int, error) {
@@ -45,24 +57,140 @@ func InitSandbox(sandboxRoot string, boxID int) error {
 	return nil
 }
 
-func RunIsolate(cfg IsolateConfig) error {
+func WriteCode(sandboxRoot, code string, boxID int, fileName string) error {
+	boxPath := fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
+	codePath := fmt.Sprintf("%s/%s", boxPath, fileName)
+	err := os.WriteFile(codePath, []byte(code), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write code file: %v", err)
+	}
+	return nil
+}
+
+func WriteInput(sandboxRoot string, boxID int, input string) error {
+	inputPath := fmt.Sprintf("%s/%d/box/input.txt", sandboxRoot, boxID)
+	err := os.WriteFile(inputPath, []byte(input), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write input file: %v", err)
+	}
+	return nil
+}
+
+func RunCommand(sandboxRoot string, boxID int, command string) error {
+	args := []string{
+		fmt.Sprintf("--box-id=%d", boxID),
+		"--stdin=input.txt",
+		"--stdout=output.txt",
+		"--stderr=cerr.txt",
+		"--meta=meta.txt",
+		"--run",
+		"--",
+	}
+	args = append(args, strings.Fields(command)...)
+
+	cmd := exec.Command("isolate", args...)
+	cmd.Dir = fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("isolate run error: %v, output: %s", err, string(output))
+	}
+	return nil
+}
+
+func CleanupSandbox(sandboxRoot string, boxID int) error {
+	args := []string{
+		fmt.Sprintf("--box-id=%d", boxID),
+		"--cleanup",
+	}
+	cmd := exec.Command("isolate", args...)
+	cmd.Dir = sandboxRoot
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("isolate cleanup error: %v, output: %s", err, string(output))
+	}
+	return nil
+}
+
+func GetStdout(sandboxRoot string, boxID int) (string, error) {
+	stdoutPath := fmt.Sprintf("%s/%d/box/output.txt", sandboxRoot, boxID)
+	data, err := os.ReadFile(stdoutPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read stdout file: %v", err)
+	}
+	return string(data), nil
+}
+
+func GetMeta(sandboxRoot string, boxID int) (string, error) {
+	metadataPath := fmt.Sprintf("%s/%d/box/meta.txt", sandboxRoot, boxID)
+	data, err := os.ReadFile(metadataPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read metadata file: %v", err)
+	}
+	return string(data), nil
+}
+
+func GetStderr(sandboxRoot string, boxID int) (string, error) {
+	stderrPath := fmt.Sprintf("%s/%d/box/cerr.txt", sandboxRoot, boxID)
+	data, err := os.ReadFile(stderrPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read stderr file: %v", err)
+	}
+	return string(data), nil
+}
+
+func Compile(sandboxRoot string, boxID int, command string) error {
+	boxPath := fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
+
+	cmdParts := strings.Fields(command)
+	for i, part := range cmdParts {
+		if part == "-o" && i+1 < len(cmdParts) {
+			cmdParts[i+1] = fmt.Sprintf("%s/main", boxPath)
+		}
+		if strings.HasSuffix(part, ".cpp") || strings.HasSuffix(part, ".c") {
+			cmdParts[i] = fmt.Sprintf("%s/%s", boxPath, part)
+		}
+	}
+
+	cmd := exec.Command(cmdParts[0], cmdParts[1:]...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("compile error: %v, output: %s", err, string(output))
+	}
+
+	return nil
+}
+
+func RunIsolate(cfg IsolateConfig) (string, string, string, error) {
 	sandboxRoot := "/var/lib/isolate"
 	boxID, err := NextBoxID(sandboxRoot)
 	if err != nil {
-		return err
+		return "", "", "", err
 	}
 	if err := InitSandbox(sandboxRoot, boxID); err != nil {
-		return fmt.Errorf("failed to initialize sandbox: %v", err)
+		return "", "", "", fmt.Errorf("failed to initialize sandbox: %v", err)
 	}
-	fmt.Println("running isolate with box ID:", boxID)
-	defer func() {
-		cleanupCmd := exec.Command("isolate", "--box-id="+strconv.Itoa(boxID), "--cleanup")
-		cleanupCmd.Dir = sandboxRoot
-		if err := cleanupCmd.Run(); err != nil {
-			fmt.Printf("failed to clean up box %d: %v\n", boxID, err)
-		} else {
-			fmt.Printf("successfully cleaned up box %d\n", boxID)
+	//defer CleanupSandbox(sandboxRoot, boxID)
+
+	if err := WriteCode(sandboxRoot, cfg.Code, boxID, cfg.File); err != nil {
+		return "", "", "", err
+	}
+
+	if cfg.Compile != "" {
+		if err := Compile(sandboxRoot, boxID, cfg.Compile); err != nil {
+			return "", "", "", fmt.Errorf("failed to compile code: %v", err)
 		}
-	}()
-	return nil
+	}
+
+	if err := WriteInput(sandboxRoot, boxID, cfg.Input); err != nil {
+		return "", "", "", err
+	}
+	if err := RunCommand(sandboxRoot, boxID, cfg.Command); err != nil {
+		return "", "", "", err
+	}
+
+	stdout, _ := GetStdout(sandboxRoot, boxID)
+	stderr, _ := GetStderr(sandboxRoot, boxID)
+	meta, _ := GetMeta(sandboxRoot, boxID)
+
+	return stdout, stderr, meta, nil
 }
