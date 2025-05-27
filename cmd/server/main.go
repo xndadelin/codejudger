@@ -84,7 +84,7 @@ func main() {
 	fmt.Println("hello! this is hackacode/s code judger")
 	http.HandleFunc("/api/v1", apiHandler)
 	http.Handle("/swagger/", httpSwagger.WrapHandler)
-	http.ListenAndServe("0.0.0.0:3000", nil)
+	http.ListenAndServe("0.0.0.0:1072", nil)
 }
 
 // @Summary      Judge code
