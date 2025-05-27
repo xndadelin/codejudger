@@ -186,7 +186,6 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 	if err := InitSandbox(sandboxRoot, boxID); err != nil {
 		return nil, fmt.Errorf("failed to initialize sandbox: %v", err)
 	}
-	defer CleanupSandbox(sandboxRoot, boxID)
 
 	if err := WriteCode(sandboxRoot, cfg.Code, boxID, cfg.File); err != nil {
 		return nil, err
@@ -230,6 +229,8 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 			Stderr:   stderr,
 		})
 	}
+
+	defer CleanupSandbox(sandboxRoot, boxID)
 
 	return results, nil
 }
