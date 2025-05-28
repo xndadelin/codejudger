@@ -56,7 +56,7 @@ func InitSandbox(sandboxRoot string, boxID int) error {
 		fmt.Sprintf("--box-id=%d", boxID),
 		"--init",
 	}
-	cmd := exec.Command("sudo", append([]string{"isolate"}, args...)...)
+	cmd := exec.Command("isolate", args...)
 	cmd.Dir = sandboxRoot
 	output, err := cmd.CombinedOutput()
 	if err != nil {
