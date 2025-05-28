@@ -53,10 +53,11 @@ func NextBoxID(sandboxRoot string) (int, error) {
 
 func InitSandbox(sandboxRoot string, boxID int) error {
 	args := []string{
+		"isolate",
 		fmt.Sprintf("--box-id=%d", boxID),
 		"--init",
 	}
-	cmd := exec.Command("isolate", args...)
+	cmd := exec.Command("sudo", args...)
 	cmd.Dir = sandboxRoot
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -86,6 +87,7 @@ func WriteInput(sandboxRoot string, boxID int, input string) error {
 
 func RunCommand(sandboxRoot string, boxID int, command string) error {
 	args := []string{
+		"isolate",
 		fmt.Sprintf("--box-id=%d", boxID),
 		"--stdin=input.txt",
 		"--stdout=output.txt",
@@ -98,7 +100,7 @@ func RunCommand(sandboxRoot string, boxID int, command string) error {
 
 	args = append(args, strings.Fields(command)...)
 
-	cmd := exec.Command("isolate", args...)
+	cmd := exec.Command("sudo", args...)
 	cmd.Dir = fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -109,10 +111,11 @@ func RunCommand(sandboxRoot string, boxID int, command string) error {
 
 func CleanupSandbox(sandboxRoot string, boxID int) error {
 	args := []string{
+		"isolate",
 		fmt.Sprintf("--box-id=%d", boxID),
 		"--cleanup",
 	}
-	cmd := exec.Command("isolate", args...)
+	cmd := exec.Command("sudo", args...)
 	cmd.Dir = sandboxRoot
 	output, err := cmd.CombinedOutput()
 	if err != nil {
