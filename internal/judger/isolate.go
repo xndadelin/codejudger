@@ -27,11 +27,13 @@ type IsolateConfig struct {
 }
 
 type JudgeResult struct {
-	ExitCode string
-	Time     string
-	Memory   string
-	Stdout   string
-	Stderr   string
+	ExitCode         string
+	Time             string
+	Memory           string
+	Stdout           string
+	Stderr           string
+	Passed           bool
+	CompilationError string
 }
 
 func NextBoxID(sandboxRoot string) (int, error) {
@@ -235,6 +237,7 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 			Memory:   memory,
 			Stdout:   stdout,
 			Stderr:   stderr,
+			Passed:   strings.TrimSpace(stdout) == strings.TrimSpace(tc.Output),
 		})
 	}
 
