@@ -181,13 +181,18 @@ func ParseMeta(meta string) map[string]string {
 }
 
 func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
-	sandboxRoot := "/var/lib/isolate"
+	sandboxRoot := "/var/local/lib/isolate"
 	boxID, err := NextBoxID(sandboxRoot)
 	if err != nil {
 		return nil, err
 	}
 	if err := InitSandbox(sandboxRoot, boxID); err != nil {
 		return nil, fmt.Errorf("failed to initialize sandbox: %v", err)
+	}
+
+	boxPath := fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
+	if _, err := os.Stat(boxPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("box directory does not exist after init: %v", boxPath)
 	}
 
 	if err := WriteCode(sandboxRoot, cfg.Code, boxID, cfg.File); err != nil {
