@@ -101,6 +101,22 @@ func main() {
 // @Failure      500 {object} map[string]interface{}
 // @Router       /api/v1 [post]
 func apiHandler(w http.ResponseWriter, r *http.Request) {
+
+	// i freaking hate cors
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	authHeader := r.Header.Get("Authorization")
 	if !isAuthorized(authHeader) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
