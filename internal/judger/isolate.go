@@ -184,7 +184,7 @@ func ParseMeta(meta string) map[string]string {
 }
 
 func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
-	sandboxRoot := "/var/lib/isolate"
+	sandboxRoot := "/var/local/lib/isolate"
 	boxID, err := NextBoxID(sandboxRoot)
 	if err != nil {
 		return nil, err
