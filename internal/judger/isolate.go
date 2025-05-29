@@ -198,7 +198,11 @@ func ParseMeta(meta string) map[string]string {
 }
 
 func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
+	enviroment := os.Getenv("ENVIRONMENT")
 	sandboxRoot := "/var/lib/isolate"
+	if enviroment == "PRODUCTION" {
+		sandboxRoot = "/var/local/lib/isolate"
+	}
 	boxID, err := NextBoxID(sandboxRoot)
 	if err != nil {
 		return nil, err
