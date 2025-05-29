@@ -15,18 +15,21 @@ WORKDIR /root/
 
 RUN apt-get update && apt-get install -y \
     curl \
-    apt-utils \
-    gnupg \
+    git \
     g++ \
     gcc \
     make \
-    build-essential
+    build-essential \
+    pkg-config \
+    libcap-dev \
+    libsystemd-dev \
+    ca-certificates
 
-RUN mkdir -p /etc/apt/keyrings && \
-    curl https://www.ucw.cz/isolate/debian/signing-key.asc -o /etc/apt/keyrings/isolate.asc && \
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/isolate.asc] http://www.ucw.cz/isolate/debian/ bookworm-isolate main" > /etc/apt/sources.list.d/isolate.list
-
-RUN apt-get update && apt-get install -y isolate
+RUN git clone https://github.com/ioi/isolate.git && \
+    cd isolate && \
+    make isolate && \
+    make install && \
+    cd .. && rm -rf isolate
 
 RUN mkdir -p /var/lib/isolate && chmod 777 /var/lib/isolate
 
