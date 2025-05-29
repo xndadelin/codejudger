@@ -1,4 +1,4 @@
-FROM golang:1.21 AS builder
+FROM golang:1.23 AS builder
 
 WORKDIR /app
 
@@ -17,21 +17,21 @@ RUN apt-get update && apt-get install -y \
     curl \
     apt-utils \
     gnupg \
-    build-essential \
-    pkg-config \
-    libcap-dev \
-    libsystemd-dev \
-    git \
-    make
+    g++ \
+    gcc \
+    make \
+    build-essential
 
-RUN git clone https://github.com/ioi/isolate.git /tmp/isolate && \
-    cd /tmp/isolate && \
-    make isolate && \
-    cp isolate /usr/local/bin/ && \
-    cd / && rm -rf /tmp/isolate
+RUN mkdir -p /etc/apt/keyrings && \
+    curl https://www.ucw.cz/isolate/debian/signing-key.asc -o /etc/apt/keyrings/isolate.asc && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/isolate.asc] http://www.ucw.cz/isolate/debian/ bookworm-isolate main" > /etc/apt/sources.list.d/isolate.list
+
+RUN apt-get update && apt-get install -y isolate
 
 RUN mkdir -p /var/lib/isolate && chmod 777 /var/lib/isolate
 
 COPY --from=builder /app/server .
+
+COPY .env ./
 
 CMD ["./server"]

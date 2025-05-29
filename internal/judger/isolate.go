@@ -60,7 +60,7 @@ func InitSandbox(sandboxRoot string, boxID int) error {
 		fmt.Sprintf("--box-id=%d", boxID),
 		"--init",
 	}
-	cmd := exec.Command("sudo", args...)
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = sandboxRoot
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -103,7 +103,7 @@ func RunCommand(sandboxRoot string, boxID int, command string) error {
 
 	args = append(args, strings.Fields(command)...)
 
-	cmd := exec.Command("sudo", args...)
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -118,7 +118,7 @@ func CleanupSandbox(sandboxRoot string, boxID int) error {
 		fmt.Sprintf("--box-id=%d", boxID),
 		"--cleanup",
 	}
-	cmd := exec.Command("sudo", args...)
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = sandboxRoot
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -184,7 +184,7 @@ func ParseMeta(meta string) map[string]string {
 }
 
 func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
-	sandboxRoot := "/var/local/lib/isolate"
+	sandboxRoot := "/var/lib/isolate"
 	boxID, err := NextBoxID(sandboxRoot)
 	if err != nil {
 		return nil, err
