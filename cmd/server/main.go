@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -182,12 +181,14 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	judgerConfig := judger.IsolateConfig{
-		File:      Languages[language].File,
-		Code:      requestData.Code,
-		Command:   Languages[language].Run,
-		Compile:   Languages[language].Compile,
-		TestCases: judgerTestCases,
-		Token:     authHeader[7:],
+		File:        Languages[language].File,
+		Code:        requestData.Code,
+		Command:     Languages[language].Run,
+		Compile:     Languages[language].Compile,
+		TestCases:   judgerTestCases,
+		Token:       authHeader[7:],
+		MemoryLimit: int(challenge["memory_limit"].(float64)),
+		TimeLimit:   int(challenge["time_limit"].(float64)),
 	}
 
 	results, err := judger.RunIsolate(judgerConfig)
@@ -202,23 +203,6 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(results) == 0 {
 		http.Error(w, "no judge results returned", http.StatusInternalServerError)
-		return
-	}
-
-	exitcode, stdout, stderr := results[0].ExitCode, results[0].Stdout, results[0].Stderr
-
-	exitCodeInt, convErr := strconv.Atoi(exitcode)
-	if convErr != nil {
-		http.Error(w, "failed to parse exit code", http.StatusInternalServerError)
-		return
-	}
-
-	if exitCodeInt != 0 {
-		http.Error(w, fmt.Sprintf("error in code execution: %s", stderr), http.StatusInternalServerError)
-		return
-	}
-	if stdout == "" {
-		http.Error(w, "no output produced by the code", http.StatusInternalServerError)
 		return
 	}
 

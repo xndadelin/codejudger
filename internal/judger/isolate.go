@@ -14,23 +14,31 @@ type TestCase struct {
 }
 
 type IsolateConfig struct {
-	BoxID     int
-	Memory    int
-	Runtime   int
-	Command   string
-	Code      string
-	Language  string
-	Input     string
-	File      string
-	TestCases []TestCase
-	Compile   string
-	Token     string
+	BoxID       int
+	Memory      int
+	Runtime     int
+	Command     string
+	Code        string
+	Language    string
+	Input       string
+	File        string
+	TestCases   []TestCase
+	Compile     string
+	Token       string
+	MemoryLimit int
+	TimeLimit   int
 }
 
 type JudgeResult struct {
 	ExitCode         string
+	Status           string
+	Killed           string
 	Time             string
+	TimeWall         string
 	Memory           string
+	CswVoluntary     string
+	CswForced        string
+	Message          string
 	Stdout           string
 	Stderr           string
 	Passed           bool
@@ -88,10 +96,14 @@ func WriteInput(sandboxRoot string, boxID int, input string) error {
 	return nil
 }
 
-func RunCommand(sandboxRoot string, boxID int, command string) error {
+func RunCommand(sandboxRoot string, boxID int, command string, cfg IsolateConfig) error {
+	fmt.Println(cfg.TimeLimit)
 	args := []string{
 		"isolate",
 		fmt.Sprintf("--box-id=%d", boxID),
+		fmt.Sprintf("--mem=%d", cfg.MemoryLimit),
+		fmt.Sprintf("--time=%d", cfg.TimeLimit),
+		fmt.Sprintf("--wall-time=%d", cfg.Runtime),
 		"--stdin=input.txt",
 		"--stdout=output.txt",
 		"--stderr=cerr.txt",
@@ -105,10 +117,12 @@ func RunCommand(sandboxRoot string, boxID int, command string) error {
 
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
-	output, err := cmd.CombinedOutput()
+	_, err := cmd.CombinedOutput()
+
 	if err != nil {
-		return fmt.Errorf("isolate run error: %v, output: %s", err, string(output))
+		return nil
 	}
+
 	return nil
 }
 
@@ -214,7 +228,7 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 		if err := WriteInput(sandboxRoot, boxID, tc.Input); err != nil {
 			return nil, err
 		}
-		if err := RunCommand(sandboxRoot, boxID, cfg.Command); err != nil {
+		if err := RunCommand(sandboxRoot, boxID, cfg.Command, cfg); err != nil {
 			return nil, err
 		}
 
@@ -222,23 +236,30 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 		stderr, _ := GetStderr(sandboxRoot, boxID)
 		meta, _ := GetMeta(sandboxRoot, boxID)
 
-		metaMap := ParseMeta(meta)
-		exitcode := metaMap["exitcode"]
-		time := metaMap["time"]
-		memory := metaMap["max-rss"]
+		fmt.Println(meta)
 
-		fmt.Println("Exit Code:", exitcode)
-		fmt.Println("Time:", time)
-		fmt.Println("Memory:", memory)
-		fmt.Println("Stdout:", stdout)
+		metaMap := ParseMeta(meta)
+
+		exitcode := 0
+		if s := strings.TrimSpace(metaMap["exitcode"]); s != "" {
+			if val, err := strconv.Atoi(s); err == nil {
+				exitcode = val
+			}
+		}
 
 		results = append(results, JudgeResult{
-			ExitCode: exitcode,
-			Time:     time,
-			Memory:   memory,
-			Stdout:   stdout,
-			Stderr:   stderr,
-			Passed:   strings.TrimSpace(stdout) == strings.TrimSpace(tc.Output),
+			ExitCode:     strconv.Itoa(exitcode),
+			Status:       strings.TrimSpace(metaMap["status"]),
+			Killed:       strings.TrimSpace(metaMap["killed"]),
+			Time:         strings.TrimSpace(metaMap["time"]),
+			TimeWall:     strings.TrimSpace(metaMap["time-wall"]),
+			Memory:       strings.TrimSpace(metaMap["max-rss"]),
+			CswVoluntary: strings.TrimSpace(metaMap["csw-voluntary"]),
+			CswForced:    strings.TrimSpace(metaMap["csw-forced"]),
+			Message:      strings.TrimSpace(metaMap["message"]),
+			Stdout:       stdout,
+			Stderr:       stderr,
+			Passed:       strings.TrimSpace(stdout) == strings.TrimSpace(tc.Output),
 		})
 	}
 
