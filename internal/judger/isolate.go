@@ -24,6 +24,7 @@ type IsolateConfig struct {
 	File      string
 	TestCases []TestCase
 	Compile   string
+	Token     string
 }
 
 type JudgeResult struct {
@@ -183,7 +184,7 @@ func ParseMeta(meta string) map[string]string {
 }
 
 func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
-	sandboxRoot := "/var/local/lib/isolate"
+	sandboxRoot := "/var/lib/isolate"
 	boxID, err := NextBoxID(sandboxRoot)
 	if err != nil {
 		return nil, err
@@ -242,6 +243,5 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 	}
 
 	defer CleanupSandbox(sandboxRoot, boxID)
-
 	return results, nil
 }

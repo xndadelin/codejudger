@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -30,4 +31,15 @@ func CreateClient() *supabase.Client {
 		log.Fatalf("ooppppsieee!!! failed to create supabase client: %v", err)
 	}
 	return client
+}
+
+func GetUser(token string) (interface{}, error) {
+	client := CreateClient()
+	authedClient := client.Auth.WithToken(token)
+	user, err := authedClient.GetUser()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("%T\n", user)
+	return user, nil
 }

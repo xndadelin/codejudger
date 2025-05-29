@@ -187,6 +187,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		Command:   Languages[language].Run,
 		Compile:   Languages[language].Compile,
 		TestCases: judgerTestCases,
+		Token:     authHeader[7:],
 	}
 
 	results, err := judger.RunIsolate(judgerConfig)
@@ -222,13 +223,24 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
+	status := "ACCEPTED"
+
+	for _, result := range results {
+		if !result.Passed {
+			status = "FAILED"
+			break
+		}
+	}
+
 	resp := map[string]interface{}{
 		"slug":     requestData.Slug,
 		"language": requestData.Language,
 		"code":     requestData.Code,
-		"status":   "success",
+		"status":   status,
 		"results":  results,
 	}
+
 	json.NewEncoder(w).Encode(resp)
 }
 
