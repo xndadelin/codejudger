@@ -118,9 +118,9 @@ func RunCommand(sandboxRoot string, boxID int, runArgs []string, cfg IsolateConf
 	_, err := cmd.CombinedOutput()
 
 	cerrPath := fmt.Sprintf("%s/%d/box/cerr.txt", sandboxRoot, boxID)
-	cerrData, err := os.ReadFile(cerrPath)
+	cerrData, _ := os.ReadFile(cerrPath)
 
-	if cerrData != nil {
+	if len(cerrData) > 0 {
 		return fmt.Errorf(string(cerrData))
 	}
 
@@ -224,7 +224,7 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 		return nil, err
 	}
 
-	if cfg.Compile != "" {
+	if strings.TrimSpace(cfg.Compile) != "" {
 		if err := Compile(sandboxRoot, boxID, cfg.Compile); err != nil {
 			return nil, fmt.Errorf("failed to compile code: %v", err)
 		}
@@ -243,8 +243,6 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 		stdout, _ := GetStdout(sandboxRoot, boxID)
 		stderr, _ := GetStderr(sandboxRoot, boxID)
 		meta, _ := GetMeta(sandboxRoot, boxID)
-
-		fmt.Println(meta)
 
 		metaMap := ParseMeta(meta)
 
@@ -271,6 +269,8 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 		})
 	}
 
-	defer CleanupSandbox(sandboxRoot, boxID)
+	defer func() {
+		CleanupSandbox(sandboxRoot, boxID)
+	}()
 	return results, nil
 }

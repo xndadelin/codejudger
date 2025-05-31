@@ -47,6 +47,7 @@ var Languages = map[string]LanguageConfig{
 		Extension: "py",
 		File:      "main.py",
 		Run:       []string{"/usr/bin/python3", "main.py"},
+		Compile:   "",
 	},
 	"Javascript": {
 		Extension: "js",
@@ -193,6 +194,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results, err := judger.RunIsolate(judgerConfig)
+	fmt.Println("results:", results)
+	fmt.Println("error:", err)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]interface{}{
