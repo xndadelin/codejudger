@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y \
     libcap-dev \
     libsystemd-dev \
     ca-certificates \
-    python3 \
+    python3
 
 RUN git clone https://github.com/ioi/isolate.git && \
     cd isolate && \

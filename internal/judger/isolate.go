@@ -17,7 +17,6 @@ type IsolateConfig struct {
 	BoxID       int
 	Memory      int
 	Runtime     int
-	Command     string
 	Code        string
 	Language    string
 	Input       string
@@ -27,6 +26,7 @@ type IsolateConfig struct {
 	Token       string
 	MemoryLimit int
 	TimeLimit   int
+	Run         []string
 }
 
 type JudgeResult struct {
@@ -96,8 +96,7 @@ func WriteInput(sandboxRoot string, boxID int, input string) error {
 	return nil
 }
 
-func RunCommand(sandboxRoot string, boxID int, command string, cfg IsolateConfig) error {
-	fmt.Println(cfg.TimeLimit)
+func RunCommand(sandboxRoot string, boxID int, runArgs []string, cfg IsolateConfig) error {
 	args := []string{
 		"isolate",
 		fmt.Sprintf("--box-id=%d", boxID),
@@ -112,17 +111,22 @@ func RunCommand(sandboxRoot string, boxID int, command string, cfg IsolateConfig
 		"--run",
 		"--",
 	}
-
-	args = append(args, strings.Fields(command)...)
+	args = append(args, runArgs...)
 
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = fmt.Sprintf("%s/%d/box", sandboxRoot, boxID)
 	_, err := cmd.CombinedOutput()
 
-	if err != nil {
-		return nil
+	cerrPath := fmt.Sprintf("%s/%d/box/cerr.txt", sandboxRoot, boxID)
+	cerrData, err := os.ReadFile(cerrPath)
+
+	if cerrData != nil {
+		return fmt.Errorf(string(cerrData))
 	}
 
+	if err != nil {
+		return fmt.Errorf("isolate run error: %v", err)
+	}
 	return nil
 }
 
@@ -232,7 +236,7 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 		if err := WriteInput(sandboxRoot, boxID, tc.Input); err != nil {
 			return nil, err
 		}
-		if err := RunCommand(sandboxRoot, boxID, cfg.Command, cfg); err != nil {
+		if err := RunCommand(sandboxRoot, boxID, cfg.Run, cfg); err != nil {
 			return nil, err
 		}
 

@@ -12,10 +12,10 @@ import (
 )
 
 type LanguageConfig struct {
-	Compile   string `json:"compile"`
-	Extension string `json:"extension"`
-	Run       string `json:"run"`
-	File      string `json:"file"`
+	Compile   string   `json:"compile"`
+	Extension string   `json:"extension"`
+	Run       []string `json:"run"`
+	File      string   `json:"file"`
 }
 
 var Languages = map[string]LanguageConfig{
@@ -23,51 +23,51 @@ var Languages = map[string]LanguageConfig{
 		Extension: "cpp",
 		File:      "main.cpp",
 		Compile:   "/usr/bin/g++ -O2 -o main main.cpp -Wall",
-		Run:       "./main",
+		Run:       []string{"./main"},
 	},
 	"C": {
 		Extension: "c",
 		File:      "main.c",
 		Compile:   "/usr/bin/gcc -O2 -o main main.c -Wall",
-		Run:       "./main",
+		Run:       []string{"./main"},
 	},
 	"Rust": {
 		Extension: "rs",
 		File:      "main.rs",
 		Compile:   "rustc main.rs -o main",
-		Run:       "./main",
+		Run:       []string{"./main"},
 	},
 	"Go": {
 		Extension: "go",
 		File:      "main.go",
 		Compile:   "go build -o main main.go",
-		Run:       "./main",
+		Run:       []string{"./main"},
 	},
 	"Python": {
 		Extension: "py",
 		File:      "main.py",
-		Run:       "/usr/bin/python3 main.py",
+		Run:       []string{"/usr/bin/python3", "main.py"},
 	},
 	"Javascript": {
 		Extension: "js",
 		File:      "main.js",
-		Run:       "/usr/bin/node main.js",
+		Run:       []string{"/usr/bin/node", "main.js"},
 	},
 	"Ruby": {
 		Extension: "rb",
 		File:      "main.rb",
-		Run:       "ruby main.rb",
+		Run:       []string{"ruby", "main.rb"},
 	},
 	"PHP": {
 		Extension: "php",
 		File:      "main.php",
-		Run:       "php main.php",
+		Run:       []string{"php", "main.php"},
 	},
 	"C#": {
 		Extension: "cs",
 		File:      "main.cs",
 		Compile:   "dotnet build -o out main.cs",
-		Run:       "dotnet out/main.dll",
+		Run:       []string{"dotnet", "out/main.dll"},
 	},
 }
 
@@ -161,7 +161,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	language := requestData.Language
 	code := requestData.Code
 
-	if _, exists := Languages[language]; !exists {
+	langCfg, exists := Languages[language]
+	if !exists {
 		http.Error(w, "unsupported language", http.StatusBadRequest)
 		return
 	}
@@ -181,10 +182,10 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	judgerConfig := judger.IsolateConfig{
-		File:        Languages[language].File,
+		File:        langCfg.File,
 		Code:        requestData.Code,
-		Command:     Languages[language].Run,
-		Compile:     Languages[language].Compile,
+		Run:         langCfg.Run,
+		Compile:     langCfg.Compile,
 		TestCases:   judgerTestCases,
 		Token:       authHeader[7:],
 		MemoryLimit: int(challenge["memory_limit"].(float64)),
