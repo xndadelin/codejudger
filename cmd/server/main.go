@@ -221,12 +221,21 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	passedCount := 0
+	for _, result := range results {
+		if result.Passed {
+			passedCount++
+		}
+	}
+	passedPercentage := float64(passedCount) / float64(len(results)) * 100
+
 	resp := map[string]interface{}{
 		"slug":     requestData.Slug,
 		"language": requestData.Language,
 		"code":     requestData.Code,
 		"status":   status,
 		"results":  results,
+		"score":    passedPercentage,
 	}
 
 	json.NewEncoder(w).Encode(resp)
