@@ -1,5 +1,24 @@
 #!/bin/bash
 
+if [[ "$1" == "--help" ]]; then
+    echo "Usage: hackacode [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --file <path>         Path to the source code file to be submitted."
+    echo "  --challenge <slug>    Slug of the challenge to submit the code for."
+    echo "  --language <lang>     Programming language of the source code (e.g., python, cpp)."
+    echo "  --help                Show this help message and exit."
+    echo ""
+    echo "Environment Variables:"
+    echo "  HACKACODE_API_KEY     Your API key for authentication with the Hackacode Judger API."
+    echo ""
+    echo "Examples:"
+    echo "  hackacode --file ./main.cpp --challenge sum --language cpp"
+    echo "  hackacode --file ./solution.py --challenge max-array --language python"
+    echo ""
+    exit 0
+fi
+
 if [ -z "$HACKACODE_API_KEY" ]; then
     echo "Error: HACKACODE_API_KEY is not set."
     exit 1
