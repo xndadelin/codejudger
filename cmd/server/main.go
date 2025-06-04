@@ -2,9 +2,11 @@ package main
 
 import (
 	"codejudger/db"
+	"codejudger/internal/hackacode"
 	"codejudger/internal/judger"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -81,10 +83,17 @@ type RequestData struct {
 }
 
 func main() {
+	http.HandleFunc("/get-token", hackacode.ApiHandler)
 	fmt.Println("hello! this is hackacode/s code judger")
 	http.HandleFunc("/api/v1", apiHandler)
 	http.Handle("/swagger/", httpSwagger.WrapHandler)
-	http.ListenAndServe("0.0.0.0:1072", nil)
+
+	port := "0.0.0.0:1072"
+
+	err := http.ListenAndServe(port, nil)
+	if err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
 
 // @Summary      Judge code
