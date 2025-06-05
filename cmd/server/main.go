@@ -2,6 +2,7 @@ package main
 
 import (
 	"codejudger/db"
+	"codejudger/db/query"
 	"codejudger/internal/hackacode"
 	"codejudger/internal/judger"
 	"encoding/json"
@@ -247,6 +248,10 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		"results":  results,
 		"score":    passedPercentage,
 	}
+
+	user, _ := query.GetUserByJWT(authHeader[7:])
+	userJSON, _ := json.MarshalIndent(user, "", "  ")
+	fmt.Println("User Data:", string(userJSON))
 
 	json.NewEncoder(w).Encode(resp)
 }
