@@ -1,14 +1,60 @@
 definitions:
+  hackacode.Response:
+    properties:
+      message:
+        type: string
+      token:
+        type: string
+    type: object
+  judger.JudgeResponse:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/judger.JudgeResult'
+        type: array
+      score:
+        type: integer
+      slug:
+        type: string
+      status:
+        type: string
+    type: object
+  judger.JudgeResult:
+    properties:
+      CompilationError:
+        type: string
+      CswForced:
+        type: string
+      CswVoluntary:
+        type: string
+      ExitCode:
+        type: string
+      Killed:
+        type: string
+      Memory:
+        type: string
+      Message:
+        type: string
+      Passed:
+        type: boolean
+      Status:
+        type: string
+      Stderr:
+        type: string
+      Stdout:
+        type: string
+      Time:
+        type: string
+      TimeWall:
+        type: string
+    type: object
   main.RequestData:
     properties:
       code:
-        description: The source code to judge
         type: string
       language:
-        description: The programming language
         type: string
       slug:
-        description: The problem identifier
         type: string
     type: object
 info:
@@ -38,8 +84,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/judger.JudgeResponse'
         "400":
           description: Bad Request
           schema:
@@ -63,4 +108,41 @@ paths:
       summary: Judge code
       tags:
       - judge
+  /get-token:
+    post:
+      consumes:
+      - application/json
+      description: Generates a JWT token for a given API key
+      parameters:
+      - description: API Key
+        in: body
+        name: api_key
+        required: true
+        schema:
+          properties:
+            api_key:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/hackacode.Response'
+        "400":
+          description: No api_key provided
+          schema:
+            type: string
+        "405":
+          description: Method Not Allowed
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Generate JWT token
+      tags:
+      - auth
 swagger: "2.0"

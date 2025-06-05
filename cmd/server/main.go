@@ -9,6 +9,8 @@ import (
 	"log"
 	"net/http"
 
+	_ "codejudger/cmd/server/docs"
+
 	"github.com/golang-jwt/jwt/v5"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -74,12 +76,10 @@ var Languages = map[string]LanguageConfig{
 	},
 }
 
-// RequestData represents the payload for code judging.
-// swagger:model
 type RequestData struct {
-	Code     string `json:"code"`     // The source code to judge
-	Slug     string `json:"slug"`     // The problem identifier
-	Language string `json:"language"` // The programming language
+	Code     string `json:"code"`
+	Slug     string `json:"slug"`
+	Language string `json:"language"`
 }
 
 func main() {
@@ -108,6 +108,7 @@ func main() {
 // @Failure      401 {object} map[string]interface{}
 // @Failure      404 {object} map[string]interface{}
 // @Failure      500 {object} map[string]interface{}
+// @Success      200 {object} judger.JudgeResponse
 // @Router       /api/v1 [post]
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 

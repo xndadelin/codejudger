@@ -39,8 +39,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/judger.JudgeResponse"
                         }
                     },
                     "400": {
@@ -73,22 +72,151 @@
                     }
                 }
             }
+        },
+        "/get-token": {
+            "post": {
+                "description": "Generates a JWT token for a given API key",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Generate JWT token",
+                "parameters": [
+                    {
+                        "description": "API Key",
+                        "name": "api_key",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "api_key": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/hackacode.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "No api_key provided",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "hackacode.Response": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "judger.JudgeResponse": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/judger.JudgeResult"
+                    }
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "judger.JudgeResult": {
+            "type": "object",
+            "properties": {
+                "CompilationError": {
+                    "type": "string"
+                },
+                "CswForced": {
+                    "type": "string"
+                },
+                "CswVoluntary": {
+                    "type": "string"
+                },
+                "ExitCode": {
+                    "type": "string"
+                },
+                "Killed": {
+                    "type": "string"
+                },
+                "Memory": {
+                    "type": "string"
+                },
+                "Message": {
+                    "type": "string"
+                },
+                "Passed": {
+                    "type": "boolean"
+                },
+                "Status": {
+                    "type": "string"
+                },
+                "Stderr": {
+                    "type": "string"
+                },
+                "Stdout": {
+                    "type": "string"
+                },
+                "Time": {
+                    "type": "string"
+                },
+                "TimeWall": {
+                    "type": "string"
+                }
+            }
+        },
         "main.RequestData": {
             "type": "object",
             "properties": {
                 "code": {
-                    "description": "The source code to judge",
                     "type": "string"
                 },
                 "language": {
-                    "description": "The programming language",
                     "type": "string"
                 },
                 "slug": {
-                    "description": "The problem identifier",
                     "type": "string"
                 }
             }

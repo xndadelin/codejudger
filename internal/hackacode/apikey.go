@@ -16,6 +16,18 @@ type Response struct {
 	Message string `json:"message"`
 }
 
+// ApiHandler godoc
+// @Summary      Generate JWT token
+// @Description  Generates a JWT token for a given API key
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        api_key  body  object{api_key=string}  true  "API Key"
+// @Success      200  {object}  Response
+// @Failure      400  {string}  string  "No api_key provided"
+// @Failure      405  {string}  string  "Method Not Allowed"
+// @Failure      500  {string}  string  "Internal Server Error"
+// @Router       /get-token [post]
 func ApiHandler(w http.ResponseWriter, r *http.Request) {
 	err := godotenv.Load()
 	if err != nil {

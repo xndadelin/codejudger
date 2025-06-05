@@ -29,20 +29,29 @@ type IsolateConfig struct {
 	Run         []string
 }
 
+// swagger:model
 type JudgeResult struct {
-	ExitCode         string
-	Status           string
-	Killed           string
-	Time             string
-	TimeWall         string
-	Memory           string
-	CswVoluntary     string
-	CswForced        string
-	Message          string
-	Stdout           string
-	Stderr           string
-	Passed           bool
-	CompilationError string
+	ExitCode         string `json:"ExitCode"`
+	Status           string `json:"Status"`
+	Killed           string `json:"Killed"`
+	Time             string `json:"Time"`
+	TimeWall         string `json:"TimeWall"`
+	Memory           string `json:"Memory"`
+	CswVoluntary     string `json:"CswVoluntary"`
+	CswForced        string `json:"CswForced"`
+	Message          string `json:"Message"`
+	Stdout           string `json:"Stdout"`
+	Stderr           string `json:"Stderr"`
+	Passed           bool   `json:"Passed"`
+	CompilationError string `json:"CompilationError,omitempty"`
+}
+
+// swagger:model
+type JudgeResponse struct {
+	Status  string        `json:"status"`
+	Score   int           `json:"score"`
+	Slug    string        `json:"slug"`
+	Results []JudgeResult `json:"results"`
 }
 
 func NextBoxID(sandboxRoot string) (int, error) {
