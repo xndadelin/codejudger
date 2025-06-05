@@ -250,8 +250,27 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, _ := query.GetUserByJWT(authHeader[7:])
-	userJSON, _ := json.MarshalIndent(user, "", "  ")
-	fmt.Println("User Data:", string(userJSON))
+
+	if user != nil {
+		var submissions []map[string]interface{}
+		if user.Submissions != "" {
+			_ = json.Unmarshal([]byte(user.Submissions), &submissions)
+		}
+
+		submissions = append(submissions, resp)
+
+		submissionsJSON, _ := json.Marshal(submissions)
+		user.Submissions = string(submissionsJSON)
+
+		client := db.CreateClient()
+		_, _, err := client.From("users").
+			Update(map[string]interface{}{"submissions": user.Submissions}, "id", "eq").
+			Eq("id", user.ID).
+			Execute()
+		if err != nil {
+			fmt.Println("error updating user submissions:", err)
+		}
+	}
 
 	json.NewEncoder(w).Encode(resp)
 }
