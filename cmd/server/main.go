@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	_ "codejudger/cmd/server/docs"
 
@@ -257,14 +258,25 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 			_ = json.Unmarshal([]byte(user.Submissions), &submissions)
 		}
 
-		submissions = append(submissions, resp)
+		newSubmission := map[string]interface{}{
+			"challenge": challenge["slug"],
+			"code":      requestData.Code,
+			"result":    resp,
+			"language":  requestData.Language,
+			"timestamp": time.Now().Format(time.RFC3339),
+			"status":    resp["status"],
+			"score":     resp["score"],
+			"duelId":    nil,
+		}
+
+		submissions = append(submissions, newSubmission)
 
 		submissionsJSON, _ := json.Marshal(submissions)
 		user.Submissions = string(submissionsJSON)
 
 		client := db.CreateClient()
 		_, _, err := client.From("users").
-			Update(map[string]interface{}{"submissions": user.Submissions}, "id", "eq").
+			Update(map[string]interface{}{"submissions": json.RawMessage(submissionsJSON)}, "id", "eq").
 			Eq("id", user.ID).
 			Execute()
 		if err != nil {
