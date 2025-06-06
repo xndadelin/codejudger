@@ -214,6 +214,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
 			"status":  "comp-failed",
 			"message": fmt.Sprintf("%v", err),
+			"id":      uuid.New().String(),
 		}
 		json.NewEncoder(w).Encode(resp)
 		return
