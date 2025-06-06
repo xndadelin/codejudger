@@ -44,6 +44,7 @@ type JudgeResult struct {
 	Stderr           string `json:"Stderr"`
 	Passed           bool   `json:"Passed"`
 	CompilationError string `json:"CompilationError,omitempty"`
+	Stdin            string `json:"Stdin"`
 }
 
 // swagger:model
@@ -275,6 +276,7 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 			Stdout:       stdout,
 			Stderr:       stderr,
 			Passed:       strings.TrimSpace(stdout) == strings.TrimSpace(tc.Output),
+			Stdin:        tc.Input,
 		})
 	}
 
