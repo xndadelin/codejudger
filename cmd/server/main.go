@@ -14,6 +14,7 @@ import (
 	_ "codejudger/cmd/server/docs"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -248,6 +249,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		"status":   status,
 		"results":  results,
 		"score":    passedPercentage,
+		"id":       uuid.New().String(),
 	}
 
 	user, _ := query.GetUserByJWT(authHeader[7:])
@@ -267,6 +269,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 			"status":    resp["status"],
 			"score":     resp["score"],
 			"duelId":    nil,
+			"id":        uuid.New().String(),
 		}
 
 		submissions = append(submissions, newSubmission)
