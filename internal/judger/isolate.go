@@ -285,3 +285,141 @@ func RunIsolate(cfg IsolateConfig) ([]JudgeResult, error) {
 	}()
 	return results, nil
 }
+
+func RunSingleTest(code string, language string, input string) (JudgeResult, error) {
+	enviroment := os.Getenv("ENVIRONMENT")
+	sandboxRoot := "/var/lib/isolate"
+	if enviroment == "PRODUCTION" {
+		sandboxRoot = "/var/local/lib/isolate"
+	}
+	boxID, err := NextBoxID(sandboxRoot)
+	if err != nil {
+		return JudgeResult{}, err
+	}
+	if err := InitSandbox(sandboxRoot, boxID); err != nil {
+		return JudgeResult{}, err
+	}
+
+	langCfg, ok := Languages[language]
+	if !ok {
+		return JudgeResult{}, fmt.Errorf("unsupported language: %s", language)
+	}
+	if err := WriteCode(sandboxRoot, code, boxID, langCfg.File); err != nil {
+		return JudgeResult{}, err
+	}
+	if err := WriteInput(sandboxRoot, boxID, input); err != nil {
+		return JudgeResult{}, err
+	}
+
+	if langCfg.Compile != "" {
+		if err := Compile(sandboxRoot, boxID, langCfg.Compile); err != nil {
+			return JudgeResult{
+				CompilationError: err.Error(),
+				Passed:           false,
+				Stdin:            input,
+			}, nil
+		}
+	}
+	cfg := IsolateConfig{
+		BoxID:       boxID,
+		MemoryLimit: 128 * 1024,
+		TimeLimit:   2,
+		Runtime:     3,
+		Run:         langCfg.Run,
+	}
+	if err := RunCommand(sandboxRoot, boxID, langCfg.Run, cfg); err != nil {
+		return JudgeResult{}, err
+	}
+	stdout, _ := GetStdout(sandboxRoot, boxID)
+	stderr, _ := GetStderr(sandboxRoot, boxID)
+	meta, _ := GetMeta(sandboxRoot, boxID)
+	metaMap := ParseMeta(meta)
+	exitcode := 0
+	if s := strings.TrimSpace(metaMap["exitcode"]); s != "" {
+		if val, err := strconv.Atoi(s); err == nil {
+			exitcode = val
+		}
+	}
+
+	result := JudgeResult{
+		ExitCode:     strconv.Itoa(exitcode),
+		Status:       strings.TrimSpace(metaMap["status"]),
+		Killed:       strings.TrimSpace(metaMap["killed"]),
+		Time:         strings.TrimSpace(metaMap["time"]),
+		TimeWall:     strings.TrimSpace(metaMap["time-wall"]),
+		Memory:       strings.TrimSpace(metaMap["max-rss"]),
+		CswVoluntary: strings.TrimSpace(metaMap["csw-voluntary"]),
+		CswForced:    strings.TrimSpace(metaMap["csw-forced"]),
+		Message:      strings.TrimSpace(metaMap["message"]),
+		Stdout:       stdout,
+		Stderr:       stderr,
+		Stdin:        input,
+	}
+
+	defer func() {
+		CleanupSandbox(sandboxRoot, boxID)
+	}()
+
+	return result, nil
+}
+
+type SandboxLanguageConfig struct {
+	Extension string
+	File      string
+	Compile   string
+	Run       []string
+}
+
+var Languages = map[string]SandboxLanguageConfig{
+	"C++": {
+		Extension: "cpp",
+		File:      "main.cpp",
+		Compile:   "/usr/bin/g++ -O2 -o main main.cpp -Wall",
+		Run:       []string{"./main"},
+	},
+	"C": {
+		Extension: "c",
+		File:      "main.c",
+		Compile:   "/usr/bin/gcc -O2 -o main main.c -Wall",
+		Run:       []string{"./main"},
+	},
+	"Rust": {
+		Extension: "rs",
+		File:      "main.rs",
+		Compile:   "rustc main.rs -o main",
+		Run:       []string{"./main"},
+	},
+	"Go": {
+		Extension: "go",
+		File:      "main.go",
+		Compile:   "go build -o main main.go",
+		Run:       []string{"./main"},
+	},
+	"Python": {
+		Extension: "py",
+		File:      "main.py",
+		Run:       []string{"/usr/bin/python3", "main.py"},
+		Compile:   "",
+	},
+	"Javascript": {
+		Extension: "js",
+		File:      "main.js",
+		Run:       []string{"/usr/bin/node", "main.js"},
+	},
+	"Ruby": {
+		Extension: "rb",
+		File:      "main.rb",
+		Run:       []string{"ruby", "main.rb"},
+	},
+	"PHP": {
+		Extension: "php",
+		File:      "main.php",
+		Run:       []string{"php", "main.php"},
+	},
+	"C#": {
+		Extension: "cs",
+		File:      "main.cs",
+		Compile:   "dotnet build -o out main.cs",
+		Run:       []string{"dotnet", "out/main.dll"},
+	},
+}

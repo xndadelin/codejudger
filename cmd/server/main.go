@@ -89,6 +89,7 @@ func main() {
 	http.HandleFunc("/get-token", hackacode.ApiHandler)
 	fmt.Println("hello! this is hackacode/s code judger")
 	http.HandleFunc("/api/v1", apiHandler)
+	http.HandleFunc("/api/v1/run", hackacode.RunHandler)
 	http.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	port := "0.0.0.0:1072"
