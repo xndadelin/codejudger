@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"codejudger/db"
 	"codejudger/db/query"
 	"codejudger/internal/hackacode"
@@ -287,6 +288,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("error updating user submissions:", err)
 		}
+
+		sendSlackNotification(user, challenge, newSubmission)
 	}
 
 	json.NewEncoder(w).Encode(resp)
@@ -302,4 +305,31 @@ func verifyToken(tokenString string) bool {
 		return secretKey, nil
 	})
 	return err == nil && token.Valid
+}
+
+func sendSlackNotification(user *query.User, challenge map[string]interface{}, submission map[string]interface{}) {
+	webhookURL := db.GetEnvVar("SLACK_WEBHOOK_URL")
+	if webhookURL == "" {
+		return
+	}
+
+	status := submission["status"].(string)
+	score := submission["score"].(float64)
+
+	statusEmoji := "❌"
+	if status == "ACCEPTED" {
+		statusEmoji = "✅"
+	}
+
+	message := map[string]interface{}{
+		"text": fmt.Sprintf("%s %s: %s submitted by %s - %.0f%%", statusEmoji, challenge["slug"], status, user.Email, score),
+	}
+
+	payload, _ := json.Marshal(message)
+	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(payload))
+
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
 }
