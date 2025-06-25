@@ -84,6 +84,7 @@ type RequestData struct {
 	Code     string `json:"code"`
 	Slug     string `json:"slug"`
 	Language string `json:"language"`
+	Username string `json:"username"`
 }
 
 func main() {
@@ -208,6 +209,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		TimeLimit:   int(challenge["time_limit"].(float64)),
 	}
 
+	fmt.Println(requestData.Username)
+
 	results, err := judger.RunIsolate(judgerConfig)
 	fmt.Println("results:", results)
 	fmt.Println("error:", err)
@@ -256,8 +259,6 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, _ := query.GetUserByJWT(authHeader[7:])
-
-	fmt.Println(user)
 
 	if user != nil {
 		var submissions []map[string]interface{}
