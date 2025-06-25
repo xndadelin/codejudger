@@ -257,6 +257,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, _ := query.GetUserByJWT(authHeader[7:])
 
+	fmt.Println(user)
+
 	if user != nil {
 		var submissions []map[string]interface{}
 		if user.Submissions != "" {
@@ -280,6 +282,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		submissionsJSON, _ := json.Marshal(submissions)
 		user.Submissions = string(submissionsJSON)
 
+		sendSlackNotification(user, challenge, newSubmission)
+
 		client := db.CreateClient()
 		_, _, err := client.From("users").
 			Update(map[string]interface{}{"submissions": json.RawMessage(submissionsJSON)}, "id", "eq").
@@ -288,8 +292,6 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("error updating user submissions:", err)
 		}
-
-		sendSlackNotification(user, challenge, newSubmission)
 	}
 
 	json.NewEncoder(w).Encode(resp)
