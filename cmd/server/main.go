@@ -328,6 +328,8 @@ func sendSlackNotification(user *query.User, challenge map[string]interface{}, s
 	payload, _ := json.Marshal(message)
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(payload))
 
+	fmt.Println(resp, err)
+
 	if err != nil {
 		return
 	}
