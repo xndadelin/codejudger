@@ -308,8 +308,10 @@ func verifyToken(tokenString string) bool {
 }
 
 func sendSlackNotification(user *query.User, challenge map[string]interface{}, submission map[string]interface{}) {
+	fmt.Println("INTRAT IN FUNCTIE SLACK")
 	webhookURL := db.GetEnvVar("SLACK_WEBHOOK_URL")
 	if webhookURL == "" {
+		fmt.Println("webhookURL gol")
 		return
 	}
 
@@ -327,9 +329,7 @@ func sendSlackNotification(user *query.User, challenge map[string]interface{}, s
 
 	payload, _ := json.Marshal(message)
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(payload))
-
-	fmt.Println(resp, err)
-
+	fmt.Println("SLACK RESP:", resp, "ERR:", err)
 	if err != nil {
 		return
 	}
