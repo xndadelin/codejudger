@@ -36,6 +36,4 @@ RUN mkdir -p /var/lib/isolate && chmod 777 /var/lib/isolate
 
 COPY --from=builder /app/server .
 
-COPY .env ./
-
 CMD ["./server"]
